@@ -1,0 +1,14 @@
+project tools
+   : requirements
+       <library>/aitools//aitoolslib
+   ;
+
+exe learnrf : learnrf.cpp ;
+exe buildgef : buildgef.cpp ;
+exe samplepc : samplepc.cpp ;
+exe datasetinfo : datasetinfo.cpp ;
+exe learndt : learndt.cpp ;
+exe makedataset : makedataset.cpp ;
+exe pc : pc.cpp ;
+
+install dist : pc makedataset learndt datasetinfo samplepc learnrf buildgef ;

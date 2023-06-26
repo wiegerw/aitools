@@ -1,0 +1,8 @@
+import testing ;
+  
+project aitools/tests
+   : requirements
+       <library>/aitools//aitoolslib
+   ;
+
+test-suite data : [ test_all r ] ;

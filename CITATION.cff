@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Wesselink
+    given-names: Wieger
+    orcid: https://orcid.org/0009-0001-6746-5115
+title: "aitools library"
+version: 0.1.0
+date-released: 2023-06-26

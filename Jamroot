@@ -1,0 +1,37 @@
+import os ;
+
+project aitools
+   : requirements
+       <include>include
+       <define>FMT_HEADER_ONLY
+
+       <toolset>clang:<cxxflags>"-std=c++17" <warnings>all
+       <toolset>clang:<linkflags>-ltbb
+       <toolset>clang:<linkflags>-lgomp
+       <toolset>clang:<cxxflags>-fopenmp=libomp
+
+       <toolset>gcc:<cxxflags>-std=c++17
+       <toolset>gcc:<linkflags>-ltbb
+   ;
+
+lib aitoolslib
+       :
+         src/decision_trees.cpp
+         src/logger.cpp
+         src/probabilistic_circuits.cpp
+         src/utilities.cpp
+       :
+       ;
+
+# generate tests for all .cpp files
+rule test_all
+{
+  local all_rules = ;
+
+  for local fileb in [ glob *.cpp ]
+  {
+    all_rules += [ run $(fileb) ] ;
+  }
+
+  return $(all_rules) ;
+}
