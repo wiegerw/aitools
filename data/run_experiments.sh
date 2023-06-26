@@ -16,14 +16,23 @@ print_header() {
 }
 
 # Convert the .csv files into .data files
+print_header "Converting .csv files to .data files"
 python3 preprocess.py
+echo ""
 
 # The location of the tools. Change this if necessary.
-tooldir=../tools/dist
+tooldir=../install/bin
+
+# Check if the tools can be found in $tooldir
+if [ ! -f $tooldir/learnrf ]; then
+    echo "Error: could not find the command line tools."
+    echo "Please build the tools and set the tooldir variable to the correct location."
+    exit 1
+fi
 
 for data_file in output/*.data ; do
     name=${data_file%.*}
-    print_header $name
+    print_header $data_file
     random_forest_file="${name}.rf"
 
     # create random forest

@@ -26,3 +26,5 @@ endif()
 
 add_executable(pc pc.cpp)
 target_link_libraries(pc LINK_PUBLIC aitoolslib)
+
+install(TARGETS learnrf buildgef samplepc datasetinfo learndt makedataset RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")

@@ -24,4 +24,5 @@ pybind11_add_module(aitools src/python-bindings.cpp)
 enable_testing()
 add_subdirectory(tests)
 add_subdirectory(tools)
-add_subdirectory(tools/experimental)
+
+install(TARGETS aitoolslib RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")

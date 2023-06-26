@@ -11,4 +11,4 @@ exe learndt : learndt.cpp ;
 exe makedataset : makedataset.cpp ;
 exe pc : pc.cpp ;
 
-install dist : pc makedataset learndt datasetinfo samplepc learnrf buildgef ;
+install ../install/bin : pc makedataset learndt datasetinfo samplepc learnrf buildgef ;
