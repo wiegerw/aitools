@@ -11,7 +11,7 @@ others, I have decided to make it open source.
 
 ### main features
 * support for binary decision trees, random forests and probabilistic circuits
-* support for generative forests (an embedding of random forests in probabilistic circuits)
+* support for generative forests (to encode random forests in probabilistic circuits)
 * the code is written in modern C++
 * the code is based on precise mathematical specifications
 * the code is clean, efficient and easy to generalize
@@ -28,6 +28,9 @@ Three different split criteria are currently supported:
 * single split (a split on a single value of a discrete random variable)
 * subset split (a split on a subset of values of a discrete random variable)
 * threshold split (a split for arbitrary random variables, using a threshold value)
+
+### random forests
+Random forests are implemented as containers of decision trees. 
 
 ### probabilistic circuits
 A straightforward implementation of probabilistic circuits is included. It stores
@@ -103,6 +106,14 @@ A detailed specification of the implementation can be found in [aitools.pdf](htt
 Note that this is not a tutorial, but rather a precise description of the algorithms
 that were implemented.
 
+## Licensing
+
+The code is available under the [Boost Software License 1.0](http://www.boost.org/LICENSE_1_0.txt).
+A [local copy](https://github.com/wiegerw/aitools/blob/main/LICENSE) is included in the repository.
+
+For the experiments a script called `prep.py` is used that is available under the [MIT License](https://opensource.org/license/mit/).
+A [local copy](https://github.com/wiegerw/aitools/blob/main/MIT-LICENSE) is included in the repository.
+
 ## Installation 
 
 ### Requirements
@@ -150,7 +161,7 @@ The `data` subdirectory contains a number of example datasets. The bash script
 `run_experiments.sh` can be used to run an experiment with the command line tools.
 For each .csv file the following operations are performed:
 
-* convert the .csv file into a dataset file with the extension .data
+* convert the .csv file into a dataset file with the extension .data using the script `preprocess.py`
 * generate a random forest from the dataset using the tool `learndf`
 * transform the random forest into a generative forest using the tool `buildgef`
 * generate 100000 samples from the generative forest using the tool `samplepc`
