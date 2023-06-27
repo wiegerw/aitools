@@ -1,38 +1,67 @@
 # The aitools library
-The `aitools` library is a C++ library that contains some basic AI algorithms and data structures.
+The `aitools` library is a C++ library that contains some basic AI data structures and algorithms.
 
 ### History
 The library was originally intended to become a fast C++ equivalent of the
-[GeFS](https://github.com/AlCorreia/GeFs) Python library of Alvaro Correia. However,
+[GeFS](https://github.com/AlCorreia/GeFs) (Generative Forests) Python library. However,
 it has never been used for this purpose. Since the library itself may be useful for
 others, I have decided to make it open source.
 
 ## Contents
-The `aitools` library currently supports binary decision trees, random forests and
-probabilistic circuits. The main selling point of the `aitools` library is that the code
-is based on precise mathematical specifications. This leads to clean, simple and efficient
-code that is easy to generalize. The functionality that is offered is limited, so the
-library may not be suitable as a drop-in for existing frameworks.
+
+### main features
+* support for binary decision trees, random forests and probabilistic circuits
+* support for generative forests (an embedding of random forests in probabilistic circuits)
+* the code is written in modern C++
+* the code is based on precise mathematical specifications
+* the code is clean, efficient and easy to generalize
 
 ### binary decision trees
-The binary decision tree implementation in `aitools` is both generic and fast. The vertex class is
-very lightweight: it consists of an index range in the dataset, two references to child
-nodes, and a generic splitter that is implemented using C++ variants.
-Note that the decision tree generation of `aitools` is several orders of magnitude faster
+The binary decision tree implementation in `aitools` is both generic and fast. Contrary to
+many existing frameworks, the vertex class is very lightweight: it consists of an index range
+in the dataset, two references to child nodes, and a generic splitter that is implemented
+using C++ variants.
+The decision tree generation of the `aitools` library is many orders of magnitude faster
 than the Python/NumPy equivalent in the [GeFS](https://github.com/AlCorreia/GeFs) library.
-Random forests have been implemented as simple containers of binary decision trees.
+
+Three different split criteria are currently supported:
+* single split (a split on a single value of a discrete random variable)
+* subset split (a split on a subset of values of a discrete random variable)
+* threshold split (a split for arbitrary random variables, using a threshold value)
 
 ### probabilistic circuits
 A straightforward implementation of probabilistic circuits is included. It stores
-probabilistic circuits using a pointer structure, such that each node is allocated on the
-heap. This may not scale well for really large circuits.
+probabilistic circuits using a pointer structure, such that each node is allocated separately
+on the  heap. This design was chosen to make it easy to build probabilistic circuits using the
+Python interface. For really large circuits a different memory layout may be preferable.
+The following node types are currently supported:
+* sum nodes
+* product nodes
+* sum split nodes (an extension to efficiently encode random forests in probabilistic circuits)
+* terminal nodes with a normal distribution
+* terminal nodes with a truncated normal distribution
+* terminal nodes with a categorical distribution
 
-The probabilistic circuits come
-with sum nodes, product nodes and terminal nodes with either a categorical, normal or
-truncated normal distribution. Apart from that _sum split nodes_ are supported. These
-are introduced to support the embedding of decision trees in probabilistic circuits,
-as described in [Joints in Random Forests](https://proceedings.neurips.cc/paper/2020/file/8396b14c5dff55d13eea57487bf8ed26-Paper.pdf).
-An algorithm for this transformation is included in the repository.
+A number of algorithms on probabilistic circuits is supported:
+* (logarithmic) EVI queries
+* sampling
+* a smoothness check
+* a decomposability check
+* a normalization check
+* elimination of sum split nodes (at the cost of a larger PC)
+* transformation of random forests into probabilistic circuits
+* a generic breadth first traversal of probabilistic circuits
+
+The generic breadth first traversal should make it fairly easy to add more algorithms. 
+
+### generative forests
+In the paper [Joints in Random Forests](https://proceedings.neurips.cc/paper/2020/file/8396b14c5dff55d13eea57487bf8ed26-Paper.pdf)
+a method is described to transform random forests into probabilistic circuits. The transformed random forests
+are called _generative forests_. The structure of the original random forest is exactly preserved in the
+resulting probabilistic circuit. Since a probabilistic circuit models a probability distribution, this
+adds new functionalities to a random forest. For example, using the probabilistic circuit it is possible
+to generate new samples with approximately the same distribution as the original dataset that was used to
+create the random forest.
 
 ### input/output
 All data structures can be stored to and loaded from disk using a simple
@@ -62,10 +91,11 @@ Every subsequent line contains the numerical values of an example.
 A number of command line tools is included.
 
 * `buildgef` build a generative forest from a random forest
+* `datasetinfo` print information about a dataset
 * `learndt` learn a binary decision tree from a dataset
 * `learnrf` learn a random forest from a dataset
-* `makedataset` generate a dataset with given distributions for the features
-* `pc` contains some algorithms operating on probabilistic circuits
+* `makedataset` generate an artificial dataset with given distributions for the features
+* `pc` execute algorithms on probabilistic circuits
 * `samplepc` generate samples of a probabilistic circuit
 
 ## Documentation
