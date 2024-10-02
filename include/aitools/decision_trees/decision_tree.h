@@ -40,7 +40,7 @@ class binary_decision_tree
         : I(I_), left(left_), right(right_), split(split_)
       {}
 
-      bool is_leaf() const
+      [[nodiscard]] bool is_leaf() const
       {
         return left == undefined_index && right == undefined_index;
       }
@@ -112,7 +112,7 @@ class binary_decision_tree
       m_category_counts = std::move(other.m_category_counts);
     }
 
-    const std::vector<vertex>& vertices() const
+    [[nodiscard]] const std::vector<vertex>& vertices() const
     {
       return m_vertices;
     }
@@ -122,7 +122,7 @@ class binary_decision_tree
       return m_vertices;
     }
 
-    const std::vector<std::uint32_t>& indices() const
+    [[nodiscard]] const std::vector<std::uint32_t>& indices() const
     {
       return m_indices;
     }
@@ -132,7 +132,7 @@ class binary_decision_tree
       return m_indices;
     }
 
-    const std::vector<std::uint32_t>& classes() const
+    [[nodiscard]] const std::vector<std::uint32_t>& classes() const
     {
       return m_classes;
     }
@@ -142,12 +142,12 @@ class binary_decision_tree
       return m_classes;
     }
 
-    std::size_t feature_count() const
+    [[nodiscard]] std::size_t feature_count() const
     {
       return m_category_counts.size() - 1;
     }
 
-    const std::vector<unsigned int>& category_counts() const
+    [[nodiscard]] const std::vector<unsigned int>& category_counts() const
     {
       return m_category_counts;
     }
@@ -157,12 +157,12 @@ class binary_decision_tree
       return m_category_counts;
     }
 
-    const vertex& root() const
+    [[nodiscard]] const vertex& root() const
     {
       return m_vertices.front();
     }
 
-    std::size_t class_count() const
+    [[nodiscard]] std::size_t class_count() const
     {
       return m_category_counts.back();
     }
@@ -179,7 +179,7 @@ class binary_decision_tree
       return index;
     }
 
-    const vertex& find_vertex(std::uint32_t i) const
+    [[nodiscard]] const vertex& find_vertex(std::uint32_t i) const
     {
       return m_vertices[i];
     }

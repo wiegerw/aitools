@@ -162,7 +162,7 @@ class decision_tree_predictor
   public:
     explicit decision_tree_predictor(const binary_decision_tree& tree);
 
-    std::size_t predict(const std::vector<double>& x) const;
+    [[nodiscard]] std::size_t predict(const std::vector<double>& x) const;
 };
 
 /// \brief Executes the decision tree for the samples in I, and returns the percentage of correct predictions.

@@ -11,6 +11,7 @@
 #define AITOOLS_INDEX_RANGE_H
 
 #include <cassert>
+#include <cstdint>
 #include <iostream>
 #include <iterator>
 #include <set>

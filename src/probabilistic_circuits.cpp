@@ -7,6 +7,7 @@
 /// \file src/probabilistic_circuits.cpp
 /// \brief add your file description here.
 
+#include <unordered_map>
 #include "aitools/probabilistic_circuits/algorithms.h"
 #include "aitools/probabilistic_circuits/generative_forest.h"
 #include "aitools/utilities/container_utility.h"
