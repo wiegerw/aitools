@@ -1,0 +1,930 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{bm}
+\usepackage{bbm}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage[noend]{algpseudocode}
+\usepackage{multicol}
+\usepackage{xspace}
+\usepackage{stmaryrd}
+\usepackage{graphicx}
+\usepackage[T1]{fontenc}
+\usepackage{mathtools}
+\usepackage{hyperref}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+
+\newcommand{\func}[1]{\ensuremath{\textsf{#1}}} % functions
+\newcommand{\attr}[1]{\ensuremath{\fontfamily{cmss}\selectfont \textit{#1}}} % attributes
+\newcommand{\obj}[1]{\ensuremath{\textit{#1}}} % objects
+\newcommand{\var}[1]{\ensuremath{\textit{#1}}} % variables
+\newcommand{\set}[1]{\ensuremath{\{ #1 \} }} % sets
+
+% bold face mathcal
+\DeclareMathAlphabet\mathbfcal{OMS}{cmsy}{b}{n}
+
+% ceil / floor
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+
+% mathematical operators
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator\erf{erf}
+
+% data structures
+\newcommand{\emptylist}{\ensuremath{[\:]}}
+\newcommand{\emptymap}{\ensuremath{\{ \mapsto \}}}
+\newcommand{\concat}{\ensuremath{+\!\!+\:}}
+
+\title{The aitools library}
+\author{Wieger Wesselink}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+The aitools library is a C++ library that contains a few data structures and algorithms
+related to AI, see \href{https://github.com/wiegerw/aitools}{https://github.com/wiegerw/aitools}.It currently supports binary decision trees, random forests, 
+probabilistic circuits, generative forests and some algorithms.
+It was originally intended as a companion library for the paper \textit{Joints in Random Forests}, see \cite{correia2020joints}, but it was never used as such.
+
+\vspace{0.5cm}
+\noindent
+This document contains precise mathematical specifications of the data structures and algorithms that are used in the aitools library. This is not a tutorial, so it is assumed that the reader is already familiar with the material. In Appendix \ref{sec:pseudocode} some notation used in the algorithms is explained. 
+
+\section{Graphs}
+Let $G = (V, E)$ with $E \subseteq V \times V$ be a directed graph. We write $u \rightarrow v$ whenever $(u,v) \in E$. Let $\rightarrow^*$ be the reflexive-transitive closure of $\rightarrow$. We define
+
+\[
+\func{pred}(v) = \{ u \in V \mid u \rightarrow v \}
+\]
+
+\[
+\func{succ}(u) = \{ v \in V \mid u \rightarrow v \}
+\]
+
+\[
+\func{desc}(u) = \{ v \in V \mid u \rightarrow^* v \}
+\]
+
+\noindent
+A node $u$ is called a leaf or terminal node if $\func{succ}(u) = \emptyset$.
+
+\vspace{0.5cm}
+\noindent
+A \emph{topological ordering} of an acyclic graph $G$ is a linear ordering of the vertices $V$ such that for every directed edge $(u,v) \in E$ we have that $u$ comes before $v$ in the ordering. In the context of probabilistic circuits, this ordering is also known as \emph{feedforward order}.
+
+\section{Random variables}
+
+Let $\mathbf{X} = \{ X_1, \ldots, X_m \}$ be a set of random variables or features. We assume that each continuous variable $X_i$ assumes values in some compact set $\mathcal{X}_i \subseteq \mathbb{R}$ and each
+discrete variable $X_i$ assumes values in $\mathcal{X}_i = \{1, \ldots, K_i\}$, where $K_i$ is the number of states for $X_i$. The feature space is denoted as
+\[
+\mathbfcal{X} = \mathcal{X}_1 \times \ldots \mathcal{X}_m.
+\]
+
+Let $\mathcal{D} = \{ x_1, \ldots, x_n \}$ be a data set for the variables $\mathbf{X}$. Elements of $\mathcal{D}$ may have missing values, which we denote with the symbol $\bot$. Hence
+\[
+  x_{ij} \in \mathcal{X}_i \cup \{ \bot \} \quad (1 \leq i \leq m, 1 \leq j \leq n).
+\]
+
+In classification problems, there is also an output variable $Y$ (the \emph{class variable}) that assumes values in $\mathcal{Y} = \{ 1, \ldots, K \}$. A data set for a classification problem consists of pairs of inputs and outputs:
+$\mathcal{D} = \{ (x_1, y_1), \ldots, (x_n, y_n) \}$ with $y_i \in \mathcal{Y}$.
+
+% \noindent
+% We define the functions \func{id} and \func{ncat} as follows:
+% \[
+% \func{id}(X_i) = i \hspace{1cm} (1 \leq i \leq p)
+% \]
+
+\vspace{0.5cm}
+\noindent
+We define the function \func{project} that projects a data set $\mathcal{D}$ on coordinate $i$ as follows:
+\[
+\func{project}(\mathcal{D}, i) = \set{ x_{i} \mid x \in \mathcal{D}}.
+\]
+
+\vspace{0.5cm}
+\noindent
+We define the function \func{ncat} that operates on random variables $X_i \in \mathbf{X}$ as follows:
+\[
+\func{ncat}(X_i, \mathcal{D}) = |\func{project}(\mathcal{D}, i)|,
+\]
+In particular we have
+\[
+\func{ncat}(X_i) = \func{ncat}(X_i, \mathcal{X}_i).
+\]
+
+\vspace{0.5cm}
+\noindent
+Furthermore we define the function \func{counts} that counts the number of samples in class $k$ as:
+\[
+\func{count}(\mathcal{D}, k) = |\set{ (x_i,y_i) \in \mathcal{D} \mid y_i = k }|.
+\]
+
+\subsection{The Kendall rank correlation test}
+Let $(x_{1},y_{1}),...,(x_{n},y_{n})$ be a set of observations of the joint random variables $X$ and $Y$, such that all the values of $(x_{i})$ and $(y_{i})$ are unique (the ties are neglected for simplicity). Any pair of observations $(x_{i},y_{i})$ and
+$(x_{j},y_{j})$, where $i < j$, are said to be concordant if the sort order of
+$(x_{i},x_{j})$ and $(y_{i},y_{j})$ agrees: that is, if either both $ x_{i}>x_{j}$ and $ y_{i}>y_{j}$ holds or both $x_{i}<x_{j}$ and $y_{i}<y_{j}$; otherwise they are said to be discordant.
+
+\vspace{0.5cm}
+\noindent
+The Kendall $\tau$ coefficient is defined as: 
+\[
+  \tau ={\frac {2}{n(n-1)}}\sum _{i<j}\operatorname {sgn}(x_{i}-x_{j})\operatorname {sgn}(y_{i}-y_{j}),
+\]
+where
+\[
+\operatorname{sgn}(x) = 
+\begin{cases*}
+-1, & x < 0 \\
+0, & x = 0 \\
+1, & x > 0
+\end{cases*}
+\]
+Let $(X_1, Y_1), \ldots (X_n, Y_n)$ be a sample of $n$ pairs of observations. The rank correlation coefficient $\tau$ of Kendall is defined as
+\[
+\tau = 1 - \frac{2 K_n}{{n \choose 2}},
+\]
+where $K_n$ is the number of inversions: the number of pairs
+$\set{(X_i, Y_i), (X_j, Y_j)}$ such that $X_i < X_j$ and $Y_i > Y_j$
+for $i < j$, $i = 1, \ldots n-1$ and $j = 2, \ldots n$.
+
+\section{Probability distributions}
+% For a given probability distribution $p$ we define $\func{pdf}(p)$ as the probability density function and $\func{cdf}(p)$ as the cumulative density function of $p$. We have
+% \[
+%   \func{cdf}(p)(x) = \int\limits_{-\infty}^x \func{pdf}(p)(t) dt. 
+% \]
+
+\subsection{Uniform distribution}
+A continuous uniform distribution on an interval $[a,b]$ is denoted as $U(a,b)$, and has the following probability density function:
+\[
+f(x) = 
+\begin{cases*}
+1 \over b-a & for $a \leq x \leq b$ \\
+0 & otherwise
+\end{cases*}
+\]
+and cumulative density function
+\[
+F(x) = 
+\begin{cases*}
+0 & for $x < a$ \\
+x-a \over b-a & for $a \leq x \leq b$ \\
+1 & for $x > b$
+\end{cases*}
+\]
+
+\subsection{Normal distribution}
+A normal or Gaussian distribution $\mathcal{N}(\mu,\sigma)$ is a distribution with the following probability density function:
+\[
+\phi(\mu,\sigma;x) = \frac{1}{\sigma \sqrt{2 \pi}} e^{- \frac{1}{2} \left( \frac{x-\mu}{\sigma}\right)^2}
+\]
+and cumulative distribution function
+\[
+\Phi(\mu,\sigma;x) = \frac{1}{\sigma \sqrt{2 \pi}} 
+\int\limits_{-\infty}^x e^{\frac{-(t-\mu)^2}{2 \sigma^2}} dt,
+\]
+The parameter $\mu$ is the mean, and $\sigma$ is the standard deviation of the normal distribution. The function $\Phi$ can be expressed in terms of the error function as follows:
+\[
+\Phi(\mu,\sigma;x) = \frac{1}{2}(1 + \erf(\frac{(x - \mu)/\sigma}{\sqrt{2}})).
+\]
+\[
+\Phi^{-1}(\mu,\sigma;x) = \mu + \sigma \sqrt{2} \erf^{-1}(2x-1).
+\]
+
+\vspace{0.5cm}
+\noindent
+Sampling a normal distribution can be done by first randomly drawing a value $p \sim U(0,1)$ and then transforming it to a value $x$ using
+\[
+x = \mu + \sigma \cdot \Phi^{-1}(0,1; p) = \mu + \sigma \cdot \sqrt{2} \erf^{-1}(2p - 1).
+\]
+
+\subsection{Standard normal distribution}
+The standard normal distribution is $\mathcal{N}(0,1)$. It has the following cumulative distribution function:
+\[
+\Phi(x) = \frac{1}{\sqrt{2 \pi}} 
+\int\limits_{-\infty}^x e^{-t^2 / 2} dt,
+\]
+which is closely related to the error function $\erf$:
+\[
+\erf(x) = \frac{2}{\sqrt{\pi}} 
+\int\limits_{-\infty}^x e^{-t^2} dt.
+\]
+We have
+\[
+\Phi^{-1}(x) = \sqrt{2} \erf^{-1}(2x-1).
+\]
+
+\subsection{Truncated normal distribution}
+A truncated normal distribution is obtained from a normal distribution $\mathcal{N}(\mu,\sigma)$ by truncating it to an interval $[a,b]$ and then scaling it appropriately, see also \cite{Burkardt2014}. It has the following probability density function:
+\[
+\psi(\mu,\sigma,a,b;x) =
+\begin{cases*}
+0 & if $x < a$ \\
+\frac{\phi(\mu,\sigma;x)}{\Phi(\mu,\sigma;b) - \Phi(\mu,\sigma;a)} & if $a \leq x \leq b$ \\
+0 & if $x > b$,
+\end{cases*}
+\]
+where $\mu$ and $\sigma$ are the parameters of the original distribution. The cumulative density function is given by
+\[
+\Psi(\mu,\sigma,a,b;x) =
+\begin{cases*}
+0 & if $x < a$ \\
+\frac{\Phi(\mu,\sigma;x) - \Phi(\mu,\sigma;a)}{\Phi(\mu,\sigma;b) - \Phi(\mu,\sigma;a)} & if $a \leq x \leq b$ \\
+1 & if $x > b$.
+\end{cases*}
+\]
+and the inverse by
+\[
+\Psi^{-1}(\mu,\sigma,a,b;x) = \Phi^{-1}(\mu,\sigma; ~ \Phi(\mu,\sigma;a) + x \cdot (\Phi(\mu,\sigma;b) - \Phi(\mu,\sigma;a)))
+\]
+
+Sampling a truncated normal distribution can be done by first drawing a value $p \sim U(0,1)$ and then transforming it to a value $x$ using
+\[
+x = \Psi^{-1}(\mu, \sigma, a, b; p).
+\]
+
+\subsection{Bernoulli distribution}
+A categorical distribution is a discrete probability distribution that takes the value 1 with probability $p$ and the value 0 with probability $1 - p$. The probability mass function is given by
+\[
+f(x = i) = p_i.
+\]
+
+\subsection{Categorical distribution}
+A categorical distribution is a discrete probability distribution that models the possible results of a random variable that can take on one of K possible categories, with the probability of each category separately specified. It is characterized by $k$ probabilities $[p_1, \ldots, p_k]$ with $p_i \geq 0$ and $\sum_{i=1}^k p_i = 1$. The probability mass function is given by
+\[
+f(x = i) =
+\begin{cases*}
+  p & if $i = 1$ \\
+  1 - p & if $i = 0$
+\end{cases*}
+\]
+
+\subsection{Multinomial distribution}
+A multinomial distribution is a discrete probability distribution that models the probability of counts for each side of a $k$-sided die rolled $n$ times. It is characterized by $k$ probabilities $[p_1, \ldots, p_k]$ with $p_i \geq 0$ and $\sum_{i=1}^k p_i = 1$, and a number of trials $n$. The probability mass function is given by
+\[
+f(x_1, \ldots, x_n) = \frac{n!}{x_1! \ldots x_k!} \, p_1^{x_1} \ldots p_k^{x_k}.
+\]
+
+\section{Decision trees}
+A \emph{decision tree} (DT) is a tree $G = (V,E)$ that is used to partition the feature space $\mathbfcal{X}$ into a number of disjoint subsets. We denote the root of the tree as $\func{root}(G)$. Each node $u$ of the tree is associated with a subset $\mathbfcal{X}_u \subseteq \mathbfcal{X}$ of the feature space.
+We have $\mathbfcal{X}_{\func{root}(G)} = \mathbfcal{X}$. Each non-terminal node $u$ is labeled with a \emph{decision tree classifier} $\attr{split}(u)$ that partitions $\mathbfcal{X}$ into disjoint subsets $\{ U_1, \ldots U_p \}$, and such that $\mathbfcal{X}_{v_i} = \mathbfcal{X}_{u} \cap U_i$, for $v_i \in \func{succ}(u)$.
+In particular we have that the leaf nodes of $G$ define a partition of the feature space: $\mathbfcal{X} = \cup \{ \mathbfcal{X}_v \mid v \in V \land \func{succ}(v) = \emptyset \}$.
+
+\vspace{0.5cm}
+\noindent
+A decision tree is usually defined over a data set $\mathcal{D}$. Each node $u$ is associated with the subset $\mathcal{D}_u = \mathbfcal{X}_u \cap \mathcal{D}$. We define $\func{count}(u) = |\mathcal{D}_u|$.
+
+\subsection{Decision tree classifiers}
+This section gives an overview of the supported decision tree classifiers. Currently, all of them are binary splits, i.e. they partition the feature space in two subsets. For each classifier, a function \func{partition-number} is defined that assigns a partition to each element $x$ of the feature space. In case of a binary split, the partition numbers are 1 and 2.
+Furthermore, a function \func{domain} is defined that specifies for each variable the part of the domain where it can be nonzero. For the root $u$ of the decision tree, we have $\func{domain}(u, X_i) = \mathcal{X}_i$ for each variable $X_i \in \mathbf{X}$.
+
+\subsubsection*{Single split}
+A \emph{single split} $\obj{SingleSplit}(X_i, v)$ is an axis-aligned split defined by a discrete random variable $X_i$ with domain $\mathcal{X}_i$ and a value $v \in \mathcal{X}_i$. We define
+\[
+\func{partition-number}(\obj{SingleSplit}(X_i, v), x) =
+\begin{cases*}
+1 & if $x_i = v$ \\
+2 & otherwise.
+\end{cases*}
+\]
+\[
+\begin{array}{lll}
+\func{domain}(v_1, X_i) &=& \set{v} \\ 
+\func{domain}(v_2, X_i) &=& \func{domain}(u, X_i) \setminus \set{v},
+\end{array}
+\]
+where $\func{succ}(u) = \set{v_1, v_2}$. For other variables $X_j ~ (j \neq i)$, we have $\func{domain}(v_1, X_j) = \func{domain}(v_2, X_j) = \func{domain}(u, X_j)$.
+
+\subsubsection*{Subset split}
+A \emph{subset split} $\obj{SubsetSplit}(X_i, V)$ is an axis-aligned split that is defined by a discrete random variable $X_i$ with domain $\mathcal{X}_i$ and a set of values $V \subseteq \mathcal{X}_i$. 
+\[
+\func{partition-number}(\obj{SubsetSplit}(X_i, V), x) =
+\begin{cases*}
+1 & if $x_i \in V$ \\
+2 & otherwise.
+\end{cases*}
+\]
+\[
+\begin{array}{lll}
+\func{domain}(v_1, X_i) &=& \func{domain}(u, X_i) \cap V \\ 
+\func{domain}(v_2, X_i) &=& \func{domain}(u, X_i) \setminus V,
+\end{array}
+\]
+where $\func{succ}(u) = \set{v_1, v_2}$. For other variables $X_j ~ (j \neq i)$, we have $\func{domain}(v_1, X_j) = \func{domain}(v_2, X_j) = \func{domain}(u, X_j)$.
+
+\subsubsection*{Threshold split}
+A \emph{threshold split} $\obj{ThresholdSplit}(X_i, v)$ is an axis-aligned split defined by a continuous random variable $X_i$ with domain $\mathcal{X}_i$ and value $v \in \mathcal{X}_i$. We define
+\[
+\func{partition-number}(\obj{ThresholdSplit}(X_i, v), x) =
+\begin{cases*}
+1 & if $x_i < v$ \\
+2 & otherwise.
+\end{cases*}
+\]
+\[
+\begin{array}{lll}
+\func{domain}(v_1, X_i) &=& \func{domain}(u, X_i) \cap (-\infty, v) \\ 
+\func{domain}(v_2, X_i) &=& \func{domain}(u, X_i) \cap [v, +\infty), 
+\end{array}
+\]
+where $\func{succ}(u) = \set{v_1, v_2}$. For other variables $X_j ~ (j \neq i)$, we have $\func{domain}(v_1, X_j) = \func{domain}(v_2, X_j) = \func{domain}(u, X_j)$.
+
+\subsubsection*{Applying a splitting criterion to a data set}
+When constructing a decision tree, a splitting criterion is used to partition a data set. Let $\mathcal{D}$ be a data set, and let $u$ be a decision tree node with scope $X_i$, splitting criterion $\obj{split}$, and with successors $\func{succ}(u) = \set{v_1, \ldots, v_p}$. Then
+\[
+\func{apply-split}(\obj{split}, \mathcal{D}) = 
+[ \set{x \in \mathcal{D} \mid \func{partition-number}(\obj{split}, x) = 1}, \ldots, \set{x \in \mathcal{D} \mid \func{partition-number}(\obj{split}, x) = p}].
+\]
+
+\subsubsection*{Indicator functions}
+Each decision tree classifier \obj{split} associated with node $u$ naturally defines an indicator function for each outgoing edge. We define
+\[
+\func{indicator}(u, j) = \mathbbm{1}_{\mathbfcal{X}_j},
+\]
+where
+\[
+\mathbfcal{X}_j = \set{x \in \mathbfcal{X} \mid \func{partition-number}(\obj{split}, x) = j}.
+\]
+
+\subsubsection*{Missing values}
+When the data set contains missing values for variable $X_i$, the following approach is taken. When computing the gain of a split, samples $x$ with $x_i = \bot$ are simply ignored. When partitioning a data set using a split, the samples with $x_i = \bot$ are randomly assigned to one of the partitions.
+
+\subsection{Executing a decision tree}
+Let $x \in \mathbfcal{X}$ be an arbitrary element of the feature space. The algorithms below determines a leaf node to which $x$ corresponds.
+
+\begin{algorithm}[h]
+\caption{Executing a decision tree}
+{\textbf{Input:} A decision tree $G = (V,E)$ and a sample $x \in \mathbfcal{X}$} \\
+{\textbf{Output:} A leaf node $v \in V$. }
+\label{alg:execute_decision_tree}
+\begin{algorithmic}[1]
+\Function{Predict}{$G = (V,E), x$}
+\State $u := \func{root}(G)$
+\State $\textbf{let } \func{succ}(u) = \set{v_1, \ldots, v_p}$
+\While { \func{true} }
+  \If { $\func{succ}(u) = \emptyset$ }
+    \State \textbf{break}
+  \EndIf
+  \State $j := \func{partition-number}(\attr{split}(u), x)$ \Comment $\attr{split}(u)$ is the split criterion of node $u$
+  \State $u := v_j$
+\EndWhile
+\State \Return $u$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Learning a decision tree}
+In this section we describe an algorithm for learning a decision tree for a classification problem with data set $\mathcal{D} = \{ (x_1, y_1), \ldots, (x_n, y_n) \}$ that is defined on random variables $\mathbf{X} = \{ X_1, \ldots, X_m \}$ and class variable $Y$. 
+
+\subsubsection*{Impurity measures}
+There are several \emph{impurity measures} of a data set $\mathcal{D}$ that can be used to select a suitable split.
+The \emph{Gini index} and the \emph{cross-entropy} are two impurity measures on a data set that are defined as follows (see also \cite{Hastie2009}):
+\[
+\func{gini-index}(\mathcal{D}) 
+  = \sum\limits_{k=1}^K p_k (1 - p_k) 
+  = 1 - \sum\limits_{k=1}^K p_k^2
+\]
+\[
+\func{cross-entropy}(\mathcal{D}) = - \sum\limits_{k=1}^K 
+  p_k \log(p_k)
+\]
+where $p_k = \func{count}(\mathcal{D},k) \, / \, |\mathcal{D}|$, i.e. the proportion of samples of class $k$ in $\mathcal{D}$. Furthermore we define
+\[
+\func{purity}(\mathcal{D}) = \max\limits_{1 \leq k \leq K} p_k.
+% \begin{cases*}
+% 1 & if $\sum\limits_{i=1}^k a_i = 0$ \\
+% \max(a_1, \ldots, a_k) \, / \sum\limits_{i=1}^k a_i & otherwise
+% \end{cases*}
+% .
+\]
+
+
+% \vspace{0.5cm}
+% \noindent
+% For $a \in \mathbb{N}^k$ we define
+% \[
+% \func{purity}(a) = 
+% \begin{cases*}
+% 1 & if $\sum\limits_{i=1}^k a_i = 0$ \\
+% \max(a_1, \ldots, a_k) \, / \sum\limits_{i=1}^k a_i & otherwise
+% \end{cases*}
+% .
+% \]
+
+\subsubsection*{Choosing a best split}
+Suppose we have a data set $\mathcal{D}$, and a splitter that splits $\mathcal{D}$ into $\set{ \mathcal{D}_1, \ldots, \mathcal{D}_p }$. Given an impurity measure $\var{imp}$, the quality of the split is then measured by
+\[
+\func{gain}(\mathcal{D}, \set{ \mathcal{D}_1, \ldots, \mathcal{D}_p }, \var{imp}) = \var{imp}(\mathcal{D}) - \sum\limits_{i=1}^p \frac{|\mathcal{D}_i|}{|\mathcal{D}|} \var{imp}(\mathcal{D}_i).
+\]
+A splitter with the maximum gain is selected. In practice we use
+the simplified expression below to determine the maximum:
+\[
+\func{gain}_1(\set{ \mathcal{D}_1, \ldots, \mathcal{D}_p }, \var{imp}) = - \sum\limits_{i=1}^p |\mathcal{D}_i| \var{imp}(\mathcal{D}_i).
+\]
+This function gives the same results, but is more efficient to compute.
+% \noindent
+% We compute
+% \[
+% \func{gain}_1(\set{ \mathcal{D}_1, \ldots, \mathcal{D}_p }, \func{gini-index}) = \sum\limits_{i=1}^p 
+% \left(
+% \frac{\sum\limits_{k=1}^K \func{count}(\mathcal{D}_i, k)^2} {|\mathcal{D}_i|}
+% - |\mathcal{D}_i|
+% \right).
+% \]
+
+\begin{algorithm}[h]
+\caption{Learning a decision tree}
+{\textbf{Input:} A training set $\mathcal{D} = \{ (x_1, y_1), \ldots, (x_n, y_n) \}$ that is defined on random variables $\mathbf{X} = \{ X_1, \ldots, X_m \}$ and class variable $Y$; the maximum number of split variables $M$, $(1 \leq M \leq m)$; a family of split functions $\var{Splits}$; a function \var{gain} to measure the quality of a split; a criterion $\var{stop}$ for ending the recursion.} \\
+{\textbf{Output:} A decision tree $(V, E)$. }
+\label{alg:reachability3}
+\begin{algorithmic}[1]
+\Function{LearnDecisionTree}{$\mathcal{D}, M, \var{Splits}, \var{gain}, \var{stop}$}
+\State \textbf{choose} $u_0 \in \mathcal{V}$ \Comment{$u_0$ is a fresh node, taken from a universal set of nodes $\mathcal{V}$}
+\State $V := \set{u_0}$
+\State $E := \emptyset$
+\State $\mathcal{D}_{u_0} := \mathcal{D}$
+\State $\var{todo} := \set{u_0}$
+\While {$\var{todo} \neq \emptyset$}
+  \State \textbf{choose} $u \in \var{todo}$
+  \State $\var{todo} := \var{todo} \setminus \set{u}$
+  \If {$\var{stop}(\mathcal{D}_u)$}
+    \State \textbf{continue}
+  \EndIf
+  \State $\mathbf{Z} := \func{random-sample}(\mathbf{X}, M)$ \Comment{$\mathbf{Z} \subseteq \mathbf{X}$ is a random subset of size $M$}
+  \State $A := \argmax\limits_{\var{split} \in \var{Splits}(\mathcal{D}_u, \mathbf{Z})} \var{gain}(\func{apply-split}(\var{split}, \mathcal{D}_u))$
+  \If {$A = \emptyset$} $\mathbf{continue}$ \EndIf \Comment{$A = \emptyset$ means that no suitable split is found}
+  \State {\textbf{choose } $\var{split} \in A$}
+  \For {$D \in \func{apply-split}(\var{split}, \mathcal{D}_u)$}
+    \State \textbf{choose } $v \in \mathcal{V} \setminus V$ \Comment{$v$ is a fresh node}
+    \State $V := V \cup \set{v}$
+    \State $E := E \cup \set{(u,v)}$
+    \State $\var{todo} := \var{todo} \cup \set{v}$
+    \State $\mathcal{D}_v := D$
+  \EndFor
+\EndWhile
+\State \Return $(V, E)$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection*{Split families}
+The family of split functions $\var{Splits}(\mathcal{D}, \bm{Z})$ that is considered can for example be chosen as follows:
+\[
+\var{Splits}(\mathcal{D}, \mathbf{Z}) =
+\begin{array}{l}
+\set{ \obj{SingleSplit}(X_i, v) \mid X_i \in \bm{Z} \land \func{ncat}(X_i) \leq 5 \land v \in \func{project}(\mathcal{D}, i) } ~ \cup
+  \\
+\set{ \obj{ThresholdSplit}(X_i, v) \mid X_i \in \bm{Z} \land \func{ncat}(X_i) > 5 \land v \in \func{project}(\mathcal{D}, i) }.
+\end{array}
+\].
+
+\subsubsection*{Stop criterion}
+A possible stop criterion is
+\[ \var{stop}(\mathcal{D}_u) = 
+    |\mathcal{D}_u| \leq \func{min-samples-leaf} \lor
+    \func{mis-classification}(\mathcal{D}_u) \leq 0.01 \lor
+    \func{depth}(u) > \func{max-depth}
+\]
+where \func{min-samples-leaf} is a user defined constant and $\func{depth}(u)$ is the distance between the root of the decision tree and $u$.
+
+\clearpage
+\section{Random forests}
+A random forest is a union of decision trees $\{ G_i = (V_i, E_i) \}_{i \in I}$ that are all defined on the same feature space $\mathbfcal{X}$. The trees are disjoint, i.e. $V_i \cap V_j = \emptyset$ for $i \neq j$.
+
+\subsection{Learning a random forest}
+The following algorithm is used to learn a random forest from a training set $\mathcal{D} = \{ x_1, \ldots, x_n \}$ that is defined on random variables $\mathbf{X} = \{ X_1, \ldots, X_m \}$.
+
+\begin{algorithm}[h]
+\caption{Learning a random forest}
+{\textbf{Input:} A training set $\mathcal{D} = \{ x_1, \ldots, x_n \}$ that is defined on random variables $\mathbf{X} = \{ X_1, \ldots, X_m \}$; a function
+\var{sample} that draws a sample of $\mathcal{D}$; a fraction $p \in [0, 1]$ that determines the size of the sample; 
+the number $d$ of decision trees in the forest; the maximum number of split variables $M$, $(1 \leq M \leq m)$; a family of split functions $\var{Splits}$; a function \var{gain} to measure the quality of a split; a criterion $\var{stop}$ for ending the recursion. } \\
+{\textbf{Output:} A random forest}
+\label{alg:compute_random_forest}
+\begin{algorithmic}[1]
+\Function{LearnRandomForest}{$\mathcal{D}, \mathbf{X}, \var{sample}, p, d, M, \var{Splits}, \var{gain}, \var{stop}$}
+\State $\var{result} := \emptyset$
+\For { $1 \leq i \leq d$ }
+\State $\mathcal{D}' := \var{sample}(\mathcal{D}, p)$ \Comment{$|\mathcal{D}'| \simeq p |\mathcal{D}|$}
+\State $\var{result} := \var{result} \cup \textsc{LearnDecisionTree}(\mathcal{D}', M, \var{Splits}, \var{gain}, \var{stop})$
+\EndFor
+\State \Return $\var{result}$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\clearpage
+\section{Probabilistic circuits}
+A \emph{probabilistic circuit} (PC) is a rooted directed acyclic graph $G = (V,E)$. Each terminal node (also called \emph{distribution node}) represents a multivariate probabilistic distribution. We denote the root of the PC $G$ as $\func{root}(G)$. There are two types of non-terminal nodes: sum nodes and product nodes, and there are many different kinds of terminal nodes, see also \cite{ProbCirc20}. 
+For each node $u \in V$ an evaluation function $\func{evi}(u,x)$ is defined that is used to compute the probability of the node, where $x \in \mathbfcal{X}$ is a given sample.
+
+\subsection{Definitions}
+We denote the set of random variables that correspond to terminal node $v$ as $\func{scope}(v)$. This definition is extended to a non-terminal node $u$ using
+\[
+\func{scope}(u) = \cup \{ \func{scope}(v) \mid v \in \func{desc}(u) \land \func{succ}(v) = \emptyset \}.
+\]
+
+\noindent
+An \emph{unnormalized distribution} is any nonnegative function $\Phi(x)$ where $\exists x: \Phi(x) > 0$.
+
+\vspace{0.5cm}
+\noindent
+For each random variable $X_i$ and each $t \in \mathcal{X}_i$ we define an
+\emph{indicator variable} $\lambda_{X_i=t}$, which is a function on $\mathbfcal{X}$ defined as
+\[
+  \lambda_{X_i=t}(x) =
+  \begin{cases*}
+    1 & if $x_i = t$ \\
+    0 & otherwise.
+  \end{cases*}
+\]
+
+\begin{definition}(Network Polynomial) Let $\Phi$ be an unnormalized probability distribution over random variables $\mathbf{X}$ with finitely many states and $\bm{\lambda}$ their indicator variables. The network polynomial $f_\Phi$ of $\Phi$ is defined as
+\[
+f_\Phi(\bm{\lambda}) := \sum\limits_{x \in \mathbfcal{X}} \Phi(x) \prod\limits_{\lambda_{X_i=t} \in \bm{\lambda}} \lambda_{X_i=t}.
+\]
+\end{definition}
+
+\begin{definition}(SPN Distribution) Let $\mathcal{S}$ be a Sum-product network over $\mathbf{X}$. The distribution represented by $\mathcal{S}$ is defined as
+\[
+P_\mathcal{S}(x) := \frac{\func{evi}(\func{root}(\mathcal{S}), x)}
+{\sum\limits_{x' \in \mathbfcal{X}} \func{evi}(\func{root}(\mathcal{S}), x')}.
+\]
+\end{definition}
+
+
+% We define $\func{count}(v) = |\mathcal{D}_v|$. This definition is extended to a non-terminal node $u$ using
+% \[
+% \func{count}(u) = \sum \{ \func{count}(v) \mid v \in \func{desc}(u) \land \func{succ}(v) = \emptyset \}.
+% \]
+
+\begin{definition}(Smoothness a.k.a. completeness) A sum node $u$ is called called \emph{smooth} if its children have the same scope: $\func{scope}(v) = \func{scope}(w)$ for any $v, w \in \func{succ}(u)$. A PC $\mathcal{P}$ is called smooth if every sum node in $\mathcal{P}$ is smooth.
+\end{definition}
+
+\begin{definition}(Consistency) A product node $u$ is called called \emph{consistent} if 
+$\forall v, w \in \func{succ}(u), v \neq w$ it holds that
+$\lambda_{X=x} \in \func{desc}(v) \Rightarrow \forall x' \neq x: \lambda_{X=x'} \notin \func{desc}(w)$.
+\end{definition}
+
+\begin{definition}(Decomposability) A product node $u$ is called \emph{decomposable} if its children have non-overlapping scopes: $\func{scope}(v) \cap \func{scope}(w) = \emptyset$ for any $v, w \in \func{succ}(u)$ with $v \neq w$. A PC is called decomposable if all its product nodes are decomposable.
+\end{definition}
+
+\begin{definition}(Shared random variables) A random variable $X$ is a \emph{shared} random variable of product node $u$ if there are $v,w \in \func{succ}(u)$ with $v \neq w$ such that $X \in \func{scope}(v) \cap \func{scope}(w)$.
+\end{definition}
+
+\begin{definition}(Locally normalized) A sum node $u$ is called called \emph{locally normalized} if the weights of its outgoing edges sum to 1. A PC $\mathcal{P}$ is called locally normalized if every sum node in $\mathcal{P}$ is locally normalized.
+\end{definition}
+
+\begin{definition}(Deterministic) A PC is called \emph{deterministic} if it holds that for each complete sample $x \in \mathbfcal{X}$, each sum node has at most one non-zero child.
+\end{definition}
+
+\subsection{Nodes in a probabilistic circuit}
+This section gives an overview of the nodes in a PC that are supported. We use the convention that for every node $u$ the function \func{evi} returns the value 1 for missing data (denoted as $\bot$):
+\[
+\func{evi}(u,\bot) = 1.
+\]
+
+\subsubsection*{Sum nodes}
+A sum node $u = \obj{Sum}([w_1, \ldots, w_p])$ is a non-terminal node with $[w_1, \ldots, w_p]$ the edge weights of the outgoing edges. Let $\func{succ}(u) = \{ v_1, \ldots, v_p \}$. We have $0 \leq w_i ~ (1 \leq i \leq p)$.
+
+\[
+\begin{array}{ll}
+\func{evi}(u, x) = \sum\limits_{i=1}^m w_i \, \func{evi}(v_i, x)
+\end{array}
+\]
+
+\subsubsection*{Sum split nodes}
+A sum split node $u = \obj{SumSplit}([w_1, \ldots, w_p], \obj{split})$ is an extension of a sum node with a decision tree classifier $\obj{split}$. Note that this is not a standard node of probabilistic circuits, but it is used by generative forests that are discussed in section \ref{sec:generative}.
+The decision tree qualifier $\obj{split}$ is used to ensure that only one of the successors of $u$ can have a non-zero evaluation:
+\[
+\func{evi}(u, x) = w_j \cdot \func{evi}(v_j, x) \qquad \text{with } j=\func{partition-number}(split, x).
+\]
+% Let $\func{apply-split}(\obj{split}, \mathbfcal{X}) = \set{\mathbfcal{X}_1, \ldots, \mathbfcal{X}_p}$, and let $x \in \mathbfcal{X}_j$. Then
+
+\subsubsection*{Product nodes}
+A product node $u = \obj{Product}()$ is a non-terminal node. Let $\func{succ}(u) = \{ v_1, \ldots, v_p \}$. We have
+\[
+\begin{array}{ll}
+\func{evi}(u, x) = \prod\limits_{i=1}^m \func{evi}(v_i, x)
+\end{array}
+\]
+
+\subsubsection*{Normal nodes}
+A normal node $u = \obj{Normal}(X_i, \mu, \sigma)$ is a terminal node that models a normal distribution $\mathcal{N}(\mu,\sigma)$ for random variable $X_i$.
+We have
+\[
+\func{evi}(u, x) = \phi(\mu,\sigma; x_i).
+\]
+
+\subsubsection*{Truncated normal nodes}
+A truncated normal node $u = \obj{TruncatedNormal}(X_i, \mu, \sigma, a, b)$ is a terminal node that models a truncated normal distribution $\mathcal{N}(\mu,\sigma)$ on an interval $[a, b]$ for random variable $X_i$.
+We have
+\[
+\func{evi}(u, x) = \psi(\mu,\sigma,a,b;x_i).
+\]
+
+\subsubsection*{Categorical nodes}
+A categorical node 
+$u = \obj{Categorical}(X_i, [p_1, \ldots, p_k])$ 
+is a terminal node that models a categorical distribution with probabilities $[p_1, \ldots, p_k]$ for random variable $X_i$.
+It is only defined for integer values $x \in [1, \ldots, k]$. We have
+\[
+\func{evi}(u, x) = p_{x_i}
+\]
+
+\subsubsection*{Equal nodes}
+An equal node $u = \obj{Equal}(X_i, t)$ is a degenerate case of a categorical distribution with probability 1 for a single integer value $i \in \mathbb{N}$ for random variable $X_i$. It should only be evaluated for integer values $x \in \mathbb{N}$.
+\[
+\func{evi}(u, x) =
+\begin{cases*}
+1 & if $x_i = t$ \\
+0 & otherwise 
+\end{cases*}
+\]
+
+\subsubsection*{Not equal nodes}
+A not-equal node $u = \obj{NotEqual}(X_i, t)$ is a degenerate case of a categorical distribution with probability 1 for integer values not equal to a value $i \in \mathbb{N}$ for random variable $X_i$. It should only be evaluated for integer values $x \in \mathbb{N}$.
+\[
+\func{evi}(u, x) =
+\begin{cases*}
+1 & if $x_i \neq t$ \\
+0 & otherwise 
+\end{cases*}
+\]
+
+\subsubsection*{Less nodes}
+A less node $u = \obj{Less}(X_i, t)$ evaluates to 1 for values less than a given threshold $t$ for random variable $X_i$.
+\[
+\func{evi}(u, x) =
+\begin{cases*}
+1 & if $x_i < t$ \\
+0 & otherwise 
+\end{cases*}
+\]
+
+\subsubsection*{Greater-equal nodes}
+A greater node $u = \obj{GreaterEqual}(X_i, t)$ evaluates to 1 for values greater than or equal to a given threshold $t$ for random variable $X_i$.
+\[
+\func{evi}(u, x) =
+\begin{cases*}
+1 & if $x_i \geq t$ \\
+0 & otherwise 
+\end{cases*}
+\]
+
+\subsubsection*{Subset nodes}
+A subset node $u = \obj{Subset}(X_i, V)$ evaluates to 1 for values in a set $V$ for random variable $X_i$.
+\[
+\func{evi}(u, x) =
+\begin{cases*}
+1 & if $x_i \in V$ \\
+0 & otherwise 
+\end{cases*}
+\]
+
+\clearpage
+\subsection{Inference}
+
+\begin{algorithm}[h]
+\caption{Iterative computation of an EVI query}
+{\textbf{Input:} A probabilistic circuit $G = (V,E)$ over random variables $\mathbf{X}$ and a complete state $x \in \mathbfcal{X}$.
+} \\
+{\textbf{Output:} A probability. }
+\begin{algorithmic}[1]
+\Function{EVI-Iterative}{$G, x$}
+\State $U := \func{topological-ordering}(G)$
+\State $c := \emptymap$ \Comment $c \subset U \times \mathbb{R}$ is an empty mapping
+\For{$u \in U$}
+  \State $\textbf{let } \func{succ}(u) = [v_1, \ldots, v_p]$
+  \If {$u = \obj{Sum}([w_1, \ldots, w_p])$}
+    \State $c[u] := \sum_{j=1}^p w_j \cdot c[v_j]$ 
+  \ElsIf {$u = \obj{SumSplit}([w_1, \ldots, w_p], \obj{split})$}
+    \State $j := \func{partition-number}(split, x)$
+    \State $c[u] := w_j \cdot c[v_j]$
+  \ElsIf {$u = \obj{Product}()$}
+    \State $c[u] := \prod_{j=1}^p c[v_j]$
+  \Else \Comment{$u$ is a terminal node}
+    \State $c[u] := \func{evi}(u,x)$
+  \EndIf    
+\EndFor
+\State \Return $c[U[-1]]$ \Comment{The last node $U[-1]$ is the root of the PC}
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[h]
+\caption{Recursive computation of an EVI query}
+{\textbf{Input:} A probabilistic circuit $G = (V,E)$ over random variables $\mathbf{X}$ and a complete state $x \in \mathbfcal{X}$.
+} \\
+{\textbf{Output:} A boolean value. }
+\begin{algorithmic}[1]
+\Function{EVI-Recursive}{$G, x$}
+\State \Return $\func{evi}(\func{root}(G), x)$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\clearpage
+\subsection{Sampling}
+We start at the root node. If we have a sum node, we pick one of the children by sampling from the categorical distribution defined by the weights of the sum node---intuitively, we will pick the child with largest weight more often---and sample from it. If we have a product node, we sample from all of its children. If we have a distribution node, we just sample from its distribution and write the value into the corresponding variable in our sample. 
+
+In this algorithm we start of with an empty vector $\bm{x}$, and write values to it once we reach a leaf. Note that we sample each variable only once, so the set of scopes of the leaves the function reaches will form a partition of the scope.
+
+\begin{algorithm}[h]
+\caption{Sampling}
+{\textbf{Input:} The root node $u$ of the PC one wants to sample from, a vector $\bm{x}$ where we store the sample.} \\
+{\textbf{Output:} A sample $x$. }
+\label{alg:learnspn}
+\begin{algorithmic}[1]
+\Function{Sample}{$u, \bm{x}$}
+\State $\textbf{let } \func{succ}(u) = [v_1, \ldots, v_p]$
+  \If {$u = \obj{Sum}([w_1, \ldots, w_p])$} \Comment If sum node.
+    \State $j \sim Categorical(.|[w_1, \ldots, w_p]))$ \Comment Choose a child according to distribution given by the weights.
+    \State $\textsc{Sample}(v_j, \bm{x})$ \Comment Sample from the chosen child.
+  \ElsIf {$u = \obj{Product}()$} \Comment If product node.
+    \For {$v_j \in \func{succ}(u)$} \Comment Sample from every child.
+    \State $\textsc{Sample}(v_j, \bm{x})$
+    \EndFor
+  \Else \Comment A leaf node with a distribution parameterised by $\theta$.
+    \State $\bm{x}[\func{scope}(u)] \sim  Distribution(. | \theta)$
+  \EndIf    
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Learning a sum-product network} \label{learnspn}
+
+\begin{algorithm}[h]
+\caption{Learning a Probabilistic Circuit with LearnSPN}
+{\textbf{Input:} A training set $\mathcal{D} = \{ x_1, \ldots, x_n \}$ that is defined on a set random variables $\mathcal{X}$; A function $\var{isplit}$ that splits the set of variables $\mathcal{X}$ into independent sets; A function $\var{cluster}$ that splits the instances in $\mathcal{D}$ into $K$ clusters.} \\
+{\textbf{Output:} A Probabilistic Circuit $(V, E)$. }
+\label{alg:learnspn}
+\begin{algorithmic}[1]
+\Function{LearnSPN}{$\mathcal{D}, \mathcal{X}, \var{isplit}, \var{cluster}, \var{K}$}
+\If {$|\mathcal{X}| = 1$} \Comment{we have a single variable in the scope.}
+    \State \textbf{return} univariate distribution node fitted on $\mathcal{D}$.
+\
+\Else
+    \State $\mathcal{X}_1, \ldots, \mathcal{X}_J = isplit(\mathcal{D}, \mathcal{X})$.
+    \If {$J$ > 1} \Comment we found at least one independence relationship. 
+        \State \textbf{return} $\prod_j  \var{LearnSPN}(\mathcal{D}, \mathcal{X}_j, \var{isplit}, \var{cluster}, \var{K})$ \Comment add a prod. node with one child for each $\mathcal{X}_j$.
+    \Else 
+        \State $\mathcal{D}_1, \ldots, \mathcal{D}_K = cluster(\mathcal{D}, \mathcal{X}, K)$.
+        \State \textbf{return} $\sum_k \var{LearnSPN}(\mathcal{D}_k, \mathcal{X}, \var{isplit}, \var{cluster}, \var{K})$ \Comment add a sum node with one child for each $\mathcal{D}_k$.
+    \EndIf
+\EndIf
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+The $isplit$ function needs to identify whether there is any independence relationship in a set of variables. This typically means iterating through each possible pair $(X_i, X_j) \in \mathcal{X}$ and running an independence test: Kendall ($X_i$ and $X_j$ continuous), chi-square ($X_i$ and $X_j$ discrete), or Kruskal (one continuous, one discrete). The $cluster$ function is usually just K-means with K=2.
+
+\clearpage
+\section{Generative forests} \label{sec:generative}
+A generative forest (GeF) is a probabilistic circuit that is derived from a random forest. The structure of the underlying forest is preserved, and also the decision tree classifiers (splitters) are encoded in the PC.
+
+\subsection{Converting a random forest to a generative forest}
+
+A decision tree $G = (V,E)$ defined over a data set $\mathcal{D}$ can be straightforwardly converted into a generative forest $G'$ as follows, see also \cite{correia2020joints}.
+The graph $G' = (V',E')$ contains an isomorphic copy of $G$. Each non-terminal node $u \in V$ with decision tree classifier $\obj{split}$ is transformed into a sum split node 
+$\obj{SumSplit}([w_1, \ldots, w_p], \obj{split})$, with $w_j = |\mathcal{D}_{v_j}| / |\mathcal{D}_{u}|$ for all $v_j \in \func{succ}(u)$. Each leaf node $u \in V$ is transformed into a small PC that fits a distribution to the samples in $\mathcal{D}_u$. By default $u$ is transformed into a tree $G_u = (V_u, E_u)$ that consists of a product node with an outgoing edge for each random variable $X_i$ as follows:
+\[
+\begin{array}{lll}
+     V_u & = & \set{u, v_1, \ldots, v_m}  \\
+     E_u & = & \set{(u,v_1), \ldots, (u,v_m)} \\
+     u & = & \obj{Product}() \\
+     v_j & = & 
+       \begin{cases*}
+         \func{fit-normal}(u, X_i) & if $X_i$ is continuous \\
+         \func{fit-categorical}(u, X_i, \alpha) & otherwise
+       \end{cases*}
+\end{array}
+\]
+
+\vspace{0.5cm}
+\noindent
+For a continuous variable $X_i$ we define
+\[
+\func{fit-normal}(u, X_i) =
+\begin{cases*}
+\obj{TruncatedNormal}(X_i, \func{mean}(D_i), \func{stddev}(D_i), a, b) & if $|D_i| > 0$ \\
+\obj{TruncatedNormal}(X_i, 0, 1, a, b) & otherwise,
+\end{cases*}
+\]
+where $D_i = \set{x_i \mid x \in \mathcal{D}_u} \setminus \set{\bot}$, and where $a$ and $b$ are chosen such that $\func{domain}(u,X_i) \subseteq{[a,b]}$.
+
+\vspace{0.5cm}
+\noindent
+For a categorical variable $X_i$ and a given Laplace smoothing factor $\alpha$ we define
+\[
+\func{fit-categorical}(u, X_i, \alpha) =
+\obj{Categorical}(X_i, [p_1, \ldots, p_{\func{ncat}(X_i)}]),
+\]
+where
+\[
+p_k = \frac
+  { |\set{x \in \mathcal{D}_u \mid x_i = k}| + \alpha }
+  { |\set{x \in \mathcal{D}_u \mid x_i \neq \bot}| + \alpha \cdot \func{ncat}(X_i) }.
+\]
+
+\vspace{0.5cm}
+\noindent
+If the number of samples $\mathcal{D}_u$ is larges (say $\geq 30$), then the node $u$ can be transformed into a sum-product network using the LearnSPN algorithm, see section \ref{learnspn}.
+
+A random forest $\{ G_i = (V_i, E_i) \}_{i=1}^N$ is converted to a generative forest by first converting each decision tree $G_i$ into a PC $G'_i$, and then add a new root node $r = \obj{Sum}([\frac{1}{N}, \ldots, \frac{1}{N}])$ with outgoing edges $(r, \func{root}(G'_i))$ for $i = 1 \ldots N$. 
+
+\subsection{Converting a generative forest to a probabilistic circuit}
+A generative forest can be converted to an equivalent PC by expanding the sum split nodes. Node $u = \obj{SumSplit}([w_1, \ldots, w_p], \obj{split})$ is replaced by $u = \obj{Sum}([w_1, \ldots, w_p])$. Each edge $(u, v_j)$ is replaced by a subgraph $(V_u, E_u)$ with
+\[
+\begin{array}{lll}
+     V_u & = & \set{u, y_j, z_j, v_j}  \\
+     E_u & = & \set{(u, y_j), (y_j, v_j), (y_j, z_j)} \\
+     y_j & = & \obj{Product}() \\
+     z_j & = & \func{make-indicator-node}(u, j),
+\end{array}
+\]
+where $y_j$ and $z_j$ are fresh nodes, and
+
+\[
+\begin{array}{lll}
+     \func{make-indicator-node}(\obj{SingleSplit}(X_i, v), 0) & = & \obj{Equal}(X_i, v) \\
+     \func{make-indicator-node}(\obj{SingleSplit}(X_i, v), 1) & = & \obj{NotEqual}(X_i, v) \\
+     \func{make-indicator-node}(\obj{SubsetSplit}(X_i, V), 0) & = & \obj{Subset}(X_i, V) \\
+     \func{make-indicator-node}(\obj{SubsetSplit}(X_i, V), 1) & = & \obj{Subset}(X_i, V^C) \\
+     \func{make-indicator-node}(\obj{ThresholdSplit}(X_i, v), 0) & = & \obj{Less}(X_i, v) \\
+     \func{make-indicator-node}(\obj{ThresholdSplit}(X_i, v), 1) & = & \obj{GreaterEqual}(X_i, v) \\
+\end{array}
+\]
+
+\clearpage
+\appendix
+\section{Pseudocode} \label{sec:pseudocode}
+This section describes the pseudocode conventions and data structures that are used in this document.
+
+\subsection{Attributes}
+In many algorithms objects are manipulated that have various attributes. For example a node $u$ in a graph might be assigned the label $a$, and a common way to denote this is using the statement $u.label := a$. We do not allow this kind of object oriented notation. Instead our way to handle this is to introduce a global mapping $\var{label}$, and to write $\var{label}[u] := a$ instead. This is done to keep the amount of concepts used in the pseudocode as small as possible. In an actual implementation it may be very inefficient to store these attributes in a separate mapping. But we consider it obvious that the implementer has the freedom to choose an efficient way to store a mapping.
+
+\subsection{Lists}
+Let $l$ and $m$ be lists, and $i,j$ natural numbers. We use the following notations:
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{||l | l | l||} 
+ \hline
+ \textbf{Expression} & \textbf{Meaning} & \textbf{Precondition} \\ [0.5ex] 
+ \hline\hline
+ $\emptylist$ & The empty list & \\
+ $[a,b,c]$ & The list with elements $a$, $b$ and $c$ & \\
+ $|l|$ & The number of elements in $l$ & \\
+ $l[i]$ & The element at position $i$ & $0 \leq i < |l|$ \\
+ $l[-i]$ & The element at position $|l| - i$ & $0 < i \leq |l|$ \\
+ $l[i\mathbin{:}j]$ & The sublist $[ l[i], \ldots, l[j-1] ]$ & $0 \leq i \leq j < |l|$ \\
+ $l[i\,{:}]$ & $l[i:|l|-1]$ & $0 \leq i \leq |l|$ \\
+ $l[{:}\,i]$ & $l[0:i]$ & $0 \leq i \leq |l|$ \\
+ $l \concat m$ & The concatenation of $l$ and $m$ & \\
+ $a \in l$ & $\exists i: 0 \leq i < |l|: l[i] = a$ & \\
+ $\func{index}(l, a)$ & The smallest value $i$ such that $l[i] = a$ & $a \in l$\\
+ \hline
+\end{tabular}
+\caption{List operations}
+\label{table:1}
+\end{table}
+
+\subsection{Mappings}
+We define a mapping as a set of (key, value) pairs.
+Let $m \subseteq V \times W$ be a mapping, and let $v \in V$ and $w \in W$ be two values. We use the following notations:
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{||l | l | l||} 
+ \hline
+ \textbf{Expression} & \textbf{Meaning} & \textbf{Precondition} \\ [0.5ex] 
+ \hline\hline
+ $\emptymap$ & The empty mapping & \\
+ $\func{keys}(m)$ & $\{ v \in V \mid \exists w \in W: (v,w) \in m \}$ & \\
+ $\func{values}(m)$ & $\{ w \in W \mid \exists v \in V: (v,w) \in m \}$ & \\
+ $m[v]$ & The value $w \in W$ such that $(v,w) \in m$ & $v \in \func{keys}(m)$ \\
+ $v \in m$ & $v \in \func{keys}(m)$ & \\
+ \hline
+\end{tabular}
+\caption{Map operations}
+\label{table:1}
+\end{table}
+
+
+\newpage
+\bibliographystyle{plain}
+\bibliography{aitools}
+
+\end{document}
