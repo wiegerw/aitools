@@ -102,7 +102,7 @@ A number of command line tools is included.
 * `samplepc` generate samples of a probabilistic circuit
 
 ## Documentation
-A detailed specification of the implementation can be found in [aitools.pdf](https://github.com/wiegerw/aitools/blob/main/doc/aitools.pdf).
+A detailed specification of the implementation can be found in the document [aitools.pdf](https://wiegerw.github.io/aitools/pdf/aitools.pdf).
 Note that this is not a tutorial, but rather a precise description of the algorithms
 that were implemented.
 
