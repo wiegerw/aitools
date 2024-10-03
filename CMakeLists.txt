@@ -7,6 +7,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)  # Enable PIC for all targets
+
 find_package(Python3 COMPONENTS Interpreter Development)
 find_package(OpenMP)
 

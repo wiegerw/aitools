@@ -114,7 +114,7 @@ class command_line_group_tool
         }
         if (!parse_result)
         {
-          std::cerr << parse_result.errorMessage() << "\n";
+          std::cerr << parse_result.message() << "\n";
         }
       }
       catch (const std::exception& e)
