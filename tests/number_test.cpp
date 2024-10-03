@@ -90,11 +90,13 @@ TEST_CASE("test_strtod")
   double result_max = std::strtod(text_max.c_str(), nullptr);
   CHECK(errno != ERANGE);
 
-  // N.B. Reading std::numeric_limits<double>::min() may lead to an ERANGE error value
-  std::string text = "2.22507e-308";
+  // N.B. Using a value smaller than std::numeric_limits<double>::denorm_min()
+  std::string text = "1e-400";  // This is smaller than the smallest denormal number
   std::cout << "min = " << std::numeric_limits<double>::min() << std::endl;
-  std::cout << "min = " << std::setprecision(20) << std::numeric_limits<double>::min() << std::endl;
+  std::cout << "denorm_min = " << std::setprecision(20) << std::numeric_limits<double>::denorm_min() << std::endl;
   std::cout << "text = " << text << std::endl;
+  errno = 0;  // Reset errno before calling strtod
   double result = std::strtod(text.c_str(), nullptr);
-  CHECK(errno == ERANGE);
+  CHECK(errno == ERANGE);  // This should pass if underflow occurs
+  CHECK(result == 0.0);    // For an underflow, the result should be 0.0
 }
