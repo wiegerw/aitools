@@ -13,26 +13,23 @@ jobs:
     runs-on: windows-2022  # Use the latest Windows environment with Visual Studio 2022
 
     steps:
+      # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Set up Python 3.12
       - name: Set up Python 3.12
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12'
+          python-version: '3.12'  # Specify Python 3.12
 
-      - name: Install dependencies
-        run: |
-          choco install cmake --install-arguments="'/S' /l=3" --version=3.27.0
-          choco install ninja
-          choco install python --version=3.12.0
-          refreshenv  # Refresh environment variables to use the newly installed tools
-
+      # Configure the project with pre-installed CMake and Ninja
       - name: Configure CMake
         run: |
           cmake -S . -B build -G "Ninja" -DPYTHON_EXECUTABLE=C:/Python312/python.exe
           cmake --build build
 
+      # Run tests with CTest
       - name: Run tests with CTest
         run: |
           cd build
