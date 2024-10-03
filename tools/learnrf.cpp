@@ -120,7 +120,7 @@ class tool: public command_line_tool
         throw std::runtime_error("The variable fraction must be in the interval [0, 1]");
       }
 
-      tree_options.max_features = std::max(1ul, static_cast<std::size_t>(std::round(variable_fraction * D.feature_count())));
+      tree_options.max_features = std::max(static_cast<std::size_t>(1), static_cast<std::size_t>(std::round(variable_fraction * D.feature_count())));
       tree_options.support_missing_values = tree_options.support_missing_values || D.has_missing_values();
 
       AITOOLS_LOG(log::verbose) << "input_file = " << input_file << "\n";
