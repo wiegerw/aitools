@@ -44,9 +44,9 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(pybind11)
 
-#if (UNIX)
-#    find_package(TBB REQUIRED)
-#endif()
+if (UNIX)
+    find_package(TBB REQUIRED)
+endif()
 
 include_directories(include)
 

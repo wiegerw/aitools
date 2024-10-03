@@ -23,17 +23,15 @@ jobs:
         with:
           arch: x64
 
-      # Install dependencies
-      - name: Install Python3 and TBB
-        run: |
-          choco install python --version=3.9
-          choco install tbb
+      # Install Python (using the successfully installed `python` package)
+      - name: Install Python
+        run: choco install python
 
       # Add Python to PATH
       - name: Add Python to PATH
         run: echo "C:\\Python39" >> $env:GITHUB_PATH
 
-      # Configure the project with CMake
+      # Configure the project with CMake and use built-in parallel support for MSVC
       - name: Configure CMake
         run: |
           cmake -S . -B build -G "Visual Studio 16 2019" -A x64 -DPYTHON_EXECUTABLE=C:/Python39/python.exe
@@ -44,4 +42,3 @@ jobs:
         run: |
           cd build
           ctest -C Release --output-on-failure
-
