@@ -11,6 +11,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)  # Enable PIC for all targets
 
 if(MSVC)
     add_compile_options(/utf-8)
+    add_compile_options(/wd4267)  # Suppress warnings
 endif()
 
 find_package(Python3 COMPONENTS Interpreter Development)
