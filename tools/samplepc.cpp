@@ -38,7 +38,7 @@ class tool: public command_line_tool
     {
       AITOOLS_LOG(log::verbose) << "Loading probabilistic circuit from " << input_file << std::endl;
       probabilistic_circuit pc = load_probabilistic_circuit(input_file);
-      std::mt19937 rng{seed};
+      std::mt19937 rng{static_cast<unsigned int>(seed)};
       AITOOLS_LOG(log::verbose) << "Drawing " << sample_count << " samples from the probabilistic circuit" << std::endl;
       dataset D = sample_pc(pc, sample_count, rng);
       AITOOLS_LOG(log::verbose) << "Saving dataset to " << output_file << std::endl;

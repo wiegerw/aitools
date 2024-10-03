@@ -50,7 +50,7 @@ random_forest learn_random_forest_sequential(const dataset& D,
                                              StopCriterion node_finished,
                                              std::size_t seed = std::random_device{}())
 {
-  std::mt19937 rng{seed};
+  std::mt19937 rng{static_cast<unsigned int>(seed)};
   std::uniform_int_distribution <std::size_t> dist(std::numeric_limits<std::size_t>::min(),
                                                    std::numeric_limits<std::size_t>::max());
 

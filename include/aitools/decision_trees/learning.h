@@ -48,7 +48,7 @@ binary_decision_tree learn_decision_tree(const dataset& D,
   std::size_t m = D.feature_count();
 
   // a random number generator
-  std::mt19937 rng{seed};
+  std::mt19937 rng{static_cast<unsigned int>(seed)};
 
   // variables = [0, 1, ..., m), used for drawing a random sample to make a split
   std::vector<std::size_t> variables(m);

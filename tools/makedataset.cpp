@@ -37,7 +37,7 @@ class tool: public command_line_tool
     {
       AITOOLS_LOG(log::verbose) << "Reading distributions from " << input_file << std::endl;
       std::vector<distribution> random_variables = load_distribution_list(input_file);
-      std::mt19937 rng{seed};
+      std::mt19937 rng{static_cast<unsigned int>(seed)};
       AITOOLS_LOG(log::verbose) << "Creating dataset" << std::endl;
       dataset D = make_random_dataset(random_variables, size, rng);
       AITOOLS_LOG(log::verbose) << "Saving dataset to " << output_file << std::endl;

@@ -46,7 +46,7 @@ aitools::dataset sample_mixed_gaussian(double w1, double mu1, double sigma1, dou
   using namespace aitools;
 
   auto seed = std::random_device{}();
-  std::mt19937 rng{seed};
+  std::mt19937 rng{static_cast<unsigned int>(seed)};
 
   std::normal_distribution<double> dist1(mu1, sigma1);
   std::normal_distribution<double> dist2(mu2, sigma2);
@@ -93,7 +93,7 @@ TEST_CASE("test_random_dataset")
   std::vector<distribution> distributions = { normal_distribution(1, 2), normal_distribution(3, 1), categorical_distribution({0.2, 0.3, 0.5})};
   std::size_t n = 10000;
   auto seed = std::random_device{}();
-  std::mt19937 rng{seed};
+  std::mt19937 rng{static_cast<unsigned int>(seed)};
   dataset D = make_random_dataset(distributions, n, rng);
   std::cout << "D =\n" << D << std::endl;
 

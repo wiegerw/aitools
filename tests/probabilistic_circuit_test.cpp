@@ -307,7 +307,7 @@ void test_sampling(const aitools::probabilistic_circuit& pc, std::size_t j, doub
   using namespace aitools;
 
   auto seed = std::random_device{}();
-  std::mt19937 rng{seed};
+  std::mt19937 rng{static_cast<unsigned int>(seed)};
   dataset D = sample_pc(pc, n, rng);
   auto [mu, sigma] = mean_standard_deviation(D, xrange(n), j);
   std::cout << "mu = " << mu << " sigma = " << sigma << std::endl;
@@ -455,7 +455,7 @@ sum: 0 [21 22] [0.2 0.8]
 //  std::size_t n = 100;
 //  std::size_t m = 2;
 //  auto seed = std::random_device{}();
-//  std::mt19937 rng{seed};
+//  std::mt19937 rng{static_cast<unsigned int>(seed)};
 //  dataset D = make_random_dataset(distributions, n, rng);
 //  std::cout << "D =\n" << D << std::endl;
 //
