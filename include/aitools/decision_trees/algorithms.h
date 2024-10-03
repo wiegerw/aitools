@@ -10,6 +10,7 @@
 #ifndef AITOOLS_DECISION_TREES_ALGORITHMS_H
 #define AITOOLS_DECISION_TREES_ALGORITHMS_H
 
+#include <deque>
 #include "aitools/decision_trees/decision_tree.h"
 
 namespace aitools {
