@@ -55,6 +55,7 @@ add_compile_definitions(FMT_HEADER_ONLY)
 add_library(aitoolslib src/logger.cpp src/probabilistic_circuits.cpp src/decision_trees.cpp src/utilities.cpp)
 
 pybind11_add_module(aitools src/python-bindings.cpp)
+target_link_libraries(aitools LINK_PUBLIC aitoolslib Python3::Python pybind11::pybind11)
 
 enable_testing()
 add_subdirectory(tests)
