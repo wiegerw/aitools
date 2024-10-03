@@ -1,8 +1,29 @@
 import os ;
 
+# Configure doctest
+local DOCTEST_INCLUDE_DIR = [ os.environ DOCTEST_INCLUDE_DIR ] ;
+
+# Configure FMT
+local FMT_INCLUDE_DIR = [ os.environ FMT_INCLUDE_DIR ] ;
+
+# Configure Lyra
+local LYRA_INCLUDE_DIR = [ os.environ LYRA_INCLUDE_DIR ] ;
+
+# Configure pybind11
+local PYBIND11_INCLUDE_DIR = [ os.environ PYBIND11_INCLUDE_DIR ] ;
+
+ECHO "DOCTEST_INCLUDE_DIR = $(DOCTEST_INCLUDE_DIR)" ;
+ECHO "FMT_INCLUDE_DIR = $(FMT_INCLUDE_DIR)" ;
+ECHO "LYRA_INCLUDE_DIR = $(LYRA_INCLUDE_DIR)" ;
+ECHO "PYBIND11_INCLUDE_DIR = $(PYBIND11_INCLUDE_DIR)" ;
+
 project aitools
    : requirements
        <include>include
+       <include>$(DOCTEST_INCLUDE_DIR)
+       <include>$(FMT_INCLUDE_DIR)
+       <include>$(LYRA_INCLUDE_DIR)
+       <include>$(PYBIND11_INCLUDE_DIR)
        <define>FMT_HEADER_ONLY
 
        <toolset>clang:<cxxflags>"-std=c++17" <warnings>all

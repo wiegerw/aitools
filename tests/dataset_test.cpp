@@ -9,7 +9,6 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest/doctest.h"
-
 #include <cmath>
 #include <random>
 #include "aitools/datasets/algorithms.h"

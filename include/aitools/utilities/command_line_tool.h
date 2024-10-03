@@ -36,6 +36,8 @@ class command_line_tool
       return "";
     }
 
+    virtual ~command_line_tool() = default;
+
   public:
     int execute(int argc, const char** argv)
     {
@@ -54,7 +56,7 @@ class command_line_tool
         }
         if (!parse_result)
         {
-          std::cerr << parse_result.errorMessage() << "\n";
+          std::cerr << parse_result.message() << "\n";
         }
         if (m_debug)
         {
