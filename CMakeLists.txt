@@ -9,6 +9,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)  # Enable PIC for all targets
 
+if(MSVC)
+    add_compile_options(/utf-8)
+endif()
+
 find_package(Python3 COMPONENTS Interpreter Development)
 find_package(OpenMP)
 
