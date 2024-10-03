@@ -1,4 +1,4 @@
-name: CMake Build and Test
+name: Windows Visual Studio Build and Test
 
 on:
   push:
@@ -9,24 +9,17 @@ on:
       - main
 
 jobs:
-  build:
-    runs-on: windows-latest
+  msvc2022:
+    runs-on: windows-2022
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Set up dependencies
-        run: |
-          choco install ninja
-          echo "Dependencies installed"
+      - name: Run CMake
+        run: cmake -S . -B build -G "Visual Studio 17 2022"
 
-      - name: Configure CMake
-        run: |
-          cmake -S . -B build -G "Ninja" -DPYTHON_EXECUTABLE=${{ env.pythonLocation }}/python.exe
-          cmake --build build
+      - name: Build
+        run: cmake --build build --config Release --parallel 10
 
-      - name: Run tests with CTest
-        run: |
-          cd build
-          ctest --output-on-failure
+      - name: Test
+        run: cd build ; ctest -j 10 --output-on-failure
