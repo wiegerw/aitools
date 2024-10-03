@@ -1,0 +1,47 @@
+name: CMake Build and Test (Windows)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Set up MSVC environment
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      # Install dependencies
+      - name: Install Python3 and TBB
+        run: |
+          choco install python --version=3.9
+          choco install tbb
+
+      # Add Python to PATH
+      - name: Add Python to PATH
+        run: echo "C:\\Python39" >> $env:GITHUB_PATH
+
+      # Configure the project with CMake
+      - name: Configure CMake
+        run: |
+          cmake -S . -B build -G "Visual Studio 16 2019" -A x64 -DPYTHON_EXECUTABLE=C:/Python39/python.exe
+          cmake --build build --config Release
+
+      # Run tests with CTest
+      - name: Run tests with CTest
+        run: |
+          cd build
+          ctest -C Release --output-on-failure
+
