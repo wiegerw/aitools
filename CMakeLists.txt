@@ -10,6 +10,32 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(Python3 COMPONENTS Interpreter Development)
 find_package(OpenMP)
 
+# Fetch doctest
+FetchContent_Declare(
+        doctest
+        GIT_REPOSITORY https://github.com/doctest/doctest.git
+        GIT_TAG v2.4.11
+)
+FetchContent_MakeAvailable(doctest)
+
+# Fetch FMT
+FetchContent_Declare(
+        fmt
+        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+        GIT_TAG 11.0.2
+)
+FetchContent_MakeAvailable(fmt)
+include_directories(${fmt_SOURCE_DIR}/include)
+
+# Fetch Lyra
+FetchContent_Declare(
+        lyra
+        GIT_REPOSITORY https://github.com/bfgroup/Lyra.git
+        GIT_TAG 1.6.1
+)
+FetchContent_MakeAvailable(lyra)
+include_directories(${lyra_SOURCE_DIR}/include)
+
 # Fetch pybind11
 FetchContent_Declare(
         pybind11
