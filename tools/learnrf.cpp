@@ -7,8 +7,9 @@
 /// \file learnrf.cpp
 /// \brief add your file description here.
 
-#include <iostream>
+#include <algorithm>
 #include <cmath>
+#include <iostream>
 #include <lyra/lyra.hpp>
 #include "aitools/datasets/io.h"
 #include "aitools/decision_trees/algorithms.h"
