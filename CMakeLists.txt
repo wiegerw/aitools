@@ -15,6 +15,13 @@ if(MSVC)
     add_compile_options(/fp:strict)  # For std::nan comparisons
 endif()
 
+# Find system Boost installation - use environment variables
+set(BOOST_ROOT $ENV{BOOST_ROOT})
+set(BOOST_INCLUDEDIR $ENV{BOOST_INCLUDEDIR})
+set(BOOST_LIBRARYDIR $ENV{BOOST_LIBRARYDIR})
+set(Boost_NO_SYSTEM_PATHS ON)
+set(Boost_USE_STATIC_LIBS OFF)
+find_package(Boost REQUIRED)
 find_package(Python3 COMPONENTS Interpreter Development)
 find_package(OpenMP)
 
@@ -56,6 +63,8 @@ if (UNIX)
     find_package(TBB REQUIRED)
 endif()
 
+# Use system Boost instead of bundled headers
+include_directories(${Boost_INCLUDE_DIRS})
 include_directories(include)
 
 add_compile_definitions(FMT_HEADER_ONLY)

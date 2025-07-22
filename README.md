@@ -120,11 +120,11 @@ A [local copy](https://github.com/wiegerw/aitools/blob/main/MIT-LICENSE) is incl
 A C++17 compiler. Compilation has been tested with g++-12 and clang-14.
 
 ### Dependencies
-The `aitools` library uses the following third-party libraries. They are included in the repository.
+The `aitools` library uses the following third-party libraries.
 
-* Boost (http://boost.org), already included in the repository
-* fmt (https://github.com/fmtlib/fmt), already included in the repository
-* Lyra (https://github.com/bfgroup/Lyra), already included in the repository
+* Boost (http://boost.org)
+* fmt (https://github.com/fmtlib/fmt)
+* Lyra (https://github.com/bfgroup/Lyra)
 * Eigen (https://eigen.tuxfamily.org/)
 * pybind11 (https://github.com/pybind/pybind11)
 * parallel STL (should be included in the C++ standard library)
