@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.16)
 project(aitools LANGUAGES CXX)
 
+# Set policies for modern CMake behavior
+if(POLICY CMP0144)
+    cmake_policy(SET CMP0144 NEW)  # Boost_ROOT variable handling
+endif()
+if(POLICY CMP0167)
+    cmake_policy(SET CMP0167 NEW)  # FindBoost module removal
+endif()
+
 include(FetchContent)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -15,11 +23,16 @@ if(MSVC)
     add_compile_options(/fp:strict)  # For std::nan comparisons
 endif()
 
-# Find system Boost installation - use environment variables
-set(BOOST_ROOT $ENV{BOOST_ROOT})
-set(BOOST_INCLUDEDIR $ENV{BOOST_INCLUDEDIR})
-set(BOOST_LIBRARYDIR $ENV{BOOST_LIBRARYDIR})
-set(Boost_NO_SYSTEM_PATHS ON)
+# Find Boost installation - prefer environment variables if set
+if(DEFINED ENV{BOOST_ROOT} AND NOT "$ENV{BOOST_ROOT}" STREQUAL "")
+    set(BOOST_ROOT $ENV{BOOST_ROOT})
+    set(BOOST_INCLUDEDIR $ENV{BOOST_INCLUDEDIR})
+    set(BOOST_LIBRARYDIR $ENV{BOOST_LIBRARYDIR})
+    set(Boost_NO_SYSTEM_PATHS ON)
+    message(STATUS "Using Boost from environment: ${BOOST_ROOT}")
+else()
+    message(STATUS "Using system Boost installation")
+endif()
 set(Boost_USE_STATIC_LIBS OFF)
 find_package(Boost REQUIRED)
 find_package(Python3 COMPONENTS Interpreter Development)
