@@ -81,7 +81,7 @@ class stack_array : public noncopyable
     using value_type = T;
 
     /// \brief The given pointer should be able to hold N element of sizeof(T) bytes.
-    stack_array<T>(T* reserved_memory, std::size_t N)
+    explicit stack_array(T* reserved_memory, std::size_t N)
       : m_reserved_memory(reserved_memory),
         m_size(N)
     {
